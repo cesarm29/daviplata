@@ -1,3 +1,5 @@
+val reactNativeRoot = rootProject.projectDir.parentFile.resolve("reactnative")
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -14,30 +16,26 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
-
-        buildConfigField("String", "API_BASE_URL", "\"https://daviplata-api.vercel.app\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://daviplata-app.vercel.app\"")
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = file("release.keystore")
-            storePassword = System.getenv("STORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: ""
-            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            signingConfig = signingConfigs.getByName("release")
-        }
         debug {
             isDebuggable = true
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -59,10 +57,14 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.facebook.react:react-android")
 
-    hermesImplementation("com.facebook.react:hermes-android")
+    if (properties["hermesEnabled"]?.toString()?.toBoolean() == true) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation("org.webkit:android-jsc:+")
+    }
 }
 
 react {
-    hermesCommand = ""
-    codegenDir = file("../../node_modules/@react-native/codegen")
+    root = reactNativeRoot
+    debuggableVariants = listOf("debug")
 }

@@ -6,7 +6,8 @@ pluginManagement {
     }
 }
 
-dependencyResolution {
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
@@ -16,3 +17,5 @@ dependencyResolution {
 
 rootProject.name = "Daviplata"
 include(":app")
+
+includeBuild("../reactnative/node_modules/@react-native/gradle-plugin")
