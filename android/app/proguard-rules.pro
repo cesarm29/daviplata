@@ -1,0 +1,8 @@
+-keep class com.daviplata.** { *; }
+-keepclassmembers class com.daviplata.bridge.** { *; }
+-keep class com.facebook.react.** { *; }
+-dontwarn com.facebook.**
+-keep class org.json.** { *; }
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+-keep class javax.annotation.** { *; }

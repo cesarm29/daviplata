@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/daviplata_red</item>
+        <item name="colorPrimaryDark">@color/daviplata_dark</item>
+        <item name="colorAccent">@color/daviplata_red</item>
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+
+    <style name="SplashTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:statusBarColor">@color/daviplata_red</item>
+        <item name="android:navigationBarColor">@color/daviplata_red</item>
+    </style>
+</resources>
