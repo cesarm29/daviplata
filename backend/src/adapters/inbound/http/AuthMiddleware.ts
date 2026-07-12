@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { IAuthService } from '../../core/ports/inbound/IAuthService';
-import { AppException } from '../../core/domain/exceptions/AppException';
+import { IAuthService } from '../../../core/ports/inbound/IAuthService';
+import { AppException } from '../../../core/domain/exceptions/AppException';
 
 export class AuthMiddleware {
   constructor(private readonly authService: IAuthService) {}
@@ -19,7 +19,7 @@ export class AuthMiddleware {
       (req as any).sessionId = sessionId;
 
       next();
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof AppException) {
         res.status(error.statusCode).json({ message: error.message, code: error.code });
       } else {

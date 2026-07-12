@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { IAccountService } from '../../core/ports/inbound/IAccountService';
-import { AppException } from '../../core/domain/exceptions/AppException';
+import { IAccountService } from '../../../core/ports/inbound/IAccountService';
+import { AppException } from '../../../core/domain/exceptions/AppException';
 
 export class AccountController {
   constructor(private readonly accountService: IAccountService) {}

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { IAuthService } from '../../core/ports/inbound/IAuthService';
-import { AppException } from '../../core/domain/exceptions/AppException';
+import { IAuthService } from '../../../core/ports/inbound/IAuthService';
+import { AppException } from '../../../core/domain/exceptions/AppException';
 
 export class AuthController {
   constructor(private readonly authService: IAuthService) {}

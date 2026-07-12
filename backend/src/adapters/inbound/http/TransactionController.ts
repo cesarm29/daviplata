@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { ITransactionService } from '../../core/ports/inbound/ITransactionService';
-import { AppException } from '../../core/domain/exceptions/AppException';
+import { ITransactionService } from '../../../core/ports/inbound/ITransactionService';
+import { AppException } from '../../../core/domain/exceptions/AppException';
 
 export class TransactionController {
   constructor(private readonly transactionService: ITransactionService) {}
