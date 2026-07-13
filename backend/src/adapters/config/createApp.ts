@@ -9,8 +9,19 @@ export function createApp() {
   const app = express();
   const container = createContainer();
 
-  app.use(cors());
-  app.use(helmet());
+  app.use(cors({
+    origin: [
+      'https://daviplata-app.vercel.app',
+      'https://daviplata-api.vercel.app',
+      /\.daviplata-app\.vercel\.app$/,
+    ],
+    credentials: true,
+  }));
+  app.use(helmet({
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
   app.use(compression());
   app.use(express.json());
 

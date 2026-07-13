@@ -16,7 +16,10 @@ export class AuthService implements IAuthService {
     private readonly accountRepository: IAccountRepository,
     private readonly sessionRepository: ISessionRepository
   ) {
-    this.JWT_SECRET = process.env.JWT_SECRET || 'default-secret';
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+    this.JWT_SECRET = process.env.JWT_SECRET;
   }
 
   async login(email: string, password: string) {
