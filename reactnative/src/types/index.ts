@@ -36,11 +36,12 @@ export interface LoginResult {
 }
 
 export interface BundleProps {
-  onEvent?: (event: string, data?: any) => void;
-  userData?: UserData;
-  theme?: Theme;
+  userId?: string;
+  name?: string;
+  phone?: string;
+  token?: string;
+  balance?: number;
+  accountNumber?: string;
   movementsData?: Transaction[];
-  page?: number;
-  refreshing?: boolean;
-  onLoadMore?: () => void;
+  theme?: Theme;
 }

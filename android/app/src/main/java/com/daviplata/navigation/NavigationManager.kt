@@ -7,6 +7,8 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.daviplata.BuildConfig
 import com.daviplata.bridge.DaviplataPackage
+import com.daviplata.session.SessionManager
+import com.daviplata.session.SessionData
 import com.facebook.react.ReactInstanceManager
 import com.facebook.react.ReactRootView
 import com.facebook.react.common.LifecycleState
@@ -24,7 +26,10 @@ class NavigationManager(private val context: Context) {
         val reactInstanceManager = getOrCreateInstanceManager(name)
         val appComponent = "${name.replaceFirstChar { it.uppercase() }}Bundle"
 
-        val props = initialProps ?: Bundle()
+        val props = Bundle()
+        if (initialProps != null) {
+            props.putAll(initialProps)
+        }
 
         rootView.startReactApplication(reactInstanceManager, appComponent, props)
 
@@ -56,33 +61,80 @@ class NavigationManager(private val context: Context) {
         }
     }
 
+    private fun getSessionBundle(): Bundle? {
+        val sessionManager = SessionManager(context)
+        val session = sessionManager.getSession() ?: return null
+        return Bundle().apply {
+            putString("userId", session.userId)
+            putString("name", session.name)
+            putString("phone", session.phone)
+            putLong("expiresAt", session.expiresAt)
+        }
+    }
+
     fun handleEvent(event: String, data: Bundle?) {
+        val token = data?.getString("token") ?: ""
         when (event) {
             "LOGIN_SUCCESS" -> {
-                val sessionData = com.daviplata.session.SessionData(
+                val sessionData = SessionData(
                     sessionId = data?.getString("sessionId") ?: "",
                     userId = data?.getString("userId") ?: "",
                     name = data?.getString("name") ?: "",
                     phone = data?.getString("phone") ?: "",
                     expiresAt = System.currentTimeMillis() + 86400000
                 )
-                com.daviplata.session.SessionManager(context).saveSession(sessionData)
-                loadBundle("home", data)
+                SessionManager(context).saveSession(sessionData)
+                val homeBundle = Bundle().apply {
+                    putString("userId", sessionData.userId)
+                    putString("name", sessionData.name)
+                    putString("phone", sessionData.phone)
+                    putString("token", token)
+                }
+                loadBundle("home", homeBundle)
             }
             "LOGOUT" -> {
-                com.daviplata.session.SessionManager(context).clearSession()
+                SessionManager(context).clearSession()
                 loadBundle("login", null)
             }
-            "OPEN_TRANSFER" -> loadBundle("transfer", data)
-            "OPEN_MOVEMENTS" -> loadBundle("movements", data)
-            "BACK" -> loadBundle("home", data)
+            "OPEN_TRANSFER" -> {
+                val sessionBundle = getSessionBundle()
+                val homeBundle = Bundle()
+                if (sessionBundle != null) {
+                    homeBundle.putAll(sessionBundle)
+                }
+                homeBundle.putString("token", data?.getString("token") ?: token)
+                loadBundle("transfer", homeBundle)
+            }
+            "OPEN_MOVEMENTS" -> {
+                val sessionBundle = getSessionBundle()
+                val homeBundle = Bundle()
+                if (sessionBundle != null) {
+                    homeBundle.putAll(sessionBundle)
+                }
+                homeBundle.putString("token", data?.getString("token") ?: token)
+                loadBundle("movements", homeBundle)
+            }
+            "BACK" -> {
+                val sessionBundle = getSessionBundle()
+                val homeBundle = Bundle()
+                if (sessionBundle != null) {
+                    homeBundle.putAll(sessionBundle)
+                }
+                homeBundle.putString("token", data?.getString("token") ?: token)
+                loadBundle("home", homeBundle)
+            }
             "TRANSFER_SUCCESS" -> {
-                val homeData = Bundle().apply {
+                val homeBundle = Bundle().apply {
+                    putString("userId", data?.getString("userId"))
                     putString("name", data?.getString("name"))
                     putString("phone", data?.getString("phone"))
-                    putString("userId", data?.getString("userId"))
+                    putString("token", data?.getString("token"))
                 }
-                loadBundle("home", homeData)
+                loadBundle("home", homeBundle)
+            }
+            "SESSION_EXPIRED" -> {
+                SessionManager(context).clearSession()
+                loadBundle("login", null)
             }
         }
     }

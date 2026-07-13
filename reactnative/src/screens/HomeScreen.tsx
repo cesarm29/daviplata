@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { BundleProps } from '../types';
 import { defaultTheme } from '../theme/colors';
+import { bridge } from '../services/bridge';
 import BalanceCard from '../components/BalanceCard';
 
-const HomeScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defaultTheme }) => {
+const HomeScreen: React.FC<BundleProps> = ({ userId, name, phone, token, accountNumber: initialAccountNumber, balance: initialBalance, theme = defaultTheme }) => {
+  const [balance, setBalance] = useState(initialBalance || 0);
+  const [accountNo, setAccountNo] = useState(initialAccountNumber || '');
+
+  useEffect(() => {
+    if (token) {
+      bridge.getBalance(token).then((result) => {
+        setBalance(result.balance);
+        setAccountNo(result.accountNumber);
+      }).catch(() => {});
+    }
+  }, [token]);
+
   const formatCurrency = (amount: number): string => {
     return `$${amount.toLocaleString('es-CO')}`;
   };
@@ -12,15 +25,15 @@ const HomeScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defaultT
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={[styles.greeting, { color: theme.text }]}>Hola, {userData?.name || 'Usuario'}</Text>
+        <Text style={[styles.greeting, { color: theme.text }]}>Hola, {name || 'Usuario'}</Text>
         <Text style={[styles.balanceLabel, { color: theme.textSecondary }]}>Saldo disponible</Text>
-        <Text style={[styles.balance, { color: theme.primary }]}>{formatCurrency(userData?.balance || 0)}</Text>
+        <Text style={[styles.balance, { color: theme.primary }]}>{formatCurrency(balance)}</Text>
       </View>
 
       <View style={styles.actionsRow}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: theme.primary }]}
-          onPress={() => onEvent?.('OPEN_TRANSFER', { userData })}
+          onPress={() => bridge.sendEvent('OPEN_TRANSFER', { token, userId, name, phone })}
           activeOpacity={0.8}
         >
           <Text style={styles.actionIcon}>$</Text>
@@ -30,7 +43,7 @@ const HomeScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defaultT
 
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: theme.secondary }]}
-          onPress={() => onEvent?.('OPEN_MOVEMENTS', { userData })}
+          onPress={() => bridge.sendEvent('OPEN_MOVEMENTS', { token, userId, name, phone })}
           activeOpacity={0.8}
         >
           <Text style={styles.actionIcon}>#</Text>
@@ -44,7 +57,7 @@ const HomeScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defaultT
 
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Telefono</Text>
-          <Text style={[styles.infoValue, { color: theme.text }]}>{userData?.phone || ''}</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>{phone || ''}</Text>
         </View>
 
         <View style={styles.infoRow}>
@@ -59,13 +72,13 @@ const HomeScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defaultT
 
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Numero de cuenta</Text>
-          <Text style={[styles.infoValue, { color: theme.text }]}>{userData?.accountNumber || ''}</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>{accountNo}</Text>
         </View>
       </View>
 
       <TouchableOpacity
         style={[styles.logoutButton, { borderColor: theme.primary }]}
-        onPress={() => onEvent?.('LOGOUT')}
+        onPress={() => bridge.sendEvent('LOGOUT')}
         activeOpacity={0.7}
       >
         <Text style={[styles.logoutText, { color: theme.primary }]}>Cerrar Sesion</Text>

@@ -3,11 +3,12 @@ import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'r
 import { BundleProps } from '../types';
 import { defaultTheme } from '../theme/colors';
 import { api } from '../services/api';
+import { bridge } from '../services/bridge';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import LoadingOverlay from '../components/LoadingOverlay';
 
-const LoginScreen: React.FC<BundleProps> = ({ onEvent, theme = defaultTheme }) => {
+const LoginScreen: React.FC<BundleProps> = ({ theme = defaultTheme }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,10 +40,12 @@ const LoginScreen: React.FC<BundleProps> = ({ onEvent, theme = defaultTheme }) =
     setLoading(true);
     try {
       const result = await api.login(email, password);
-      onEvent?.('LOGIN_SUCCESS', {
+      bridge.sendEvent('LOGIN_SUCCESS', {
         sessionId: result.sessionId,
         token: result.token,
-        user: result.user,
+        userId: result.user.id,
+        name: result.user.name,
+        phone: result.user.phone,
       });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo iniciar sesion');

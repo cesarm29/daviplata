@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { BundleProps } from '../types';
 import { defaultTheme } from '../theme/colors';
 import { api } from '../services/api';
+import { bridge } from '../services/bridge';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import BalanceCard from '../components/BalanceCard';
 import LoadingOverlay from '../components/LoadingOverlay';
 
-const TransferScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defaultTheme }) => {
-  const [phone, setPhone] = useState('');
+const TransferScreen: React.FC<BundleProps> = ({ userId, name, phone, token, balance = 0, theme = defaultTheme }) => {
+  const [destPhone, setDestPhone] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,11 +19,11 @@ const TransferScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defa
   const validate = (): boolean => {
     const newErrors: { phone?: string; amount?: string } = {};
 
-    if (!phone) {
+    if (!destPhone) {
       newErrors.phone = 'El telefono es requerido';
-    } else if (!/^\d{10}$/.test(phone)) {
+    } else if (!/^\d{10}$/.test(destPhone)) {
       newErrors.phone = 'Debe ser un numero de 10 digitos';
-    } else if (userData && phone === userData.phone) {
+    } else if (phone && destPhone === phone) {
       newErrors.phone = 'No puedes enviar dinero a ti mismo';
     }
 
@@ -31,7 +32,7 @@ const TransferScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defa
       newErrors.amount = 'El monto es requerido';
     } else if (amountNum <= 0) {
       newErrors.amount = 'El monto debe ser mayor a 0';
-    } else if (userData && amountNum > userData.balance) {
+    } else if (amountNum > balance) {
       newErrors.amount = 'Saldo insuficiente';
     }
 
@@ -44,12 +45,12 @@ const TransferScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defa
 
     setLoading(true);
     try {
-      const result = await api.transfer(userData?.id ? '' : '', {
-        destinationPhone: phone,
+      const result = await api.transfer(token || '', {
+        destinationPhone: destPhone,
         amount: parseFloat(amount),
         description: description || undefined,
       });
-      onEvent?.('TRANSFER_SUCCESS', { transaction: result.transaction });
+      bridge.sendEvent('TRANSFER_SUCCESS', { userId, name, phone, token });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo realizar la transferencia');
     } finally {
@@ -60,19 +61,19 @@ const TransferScreen: React.FC<BundleProps> = ({ onEvent, userData, theme = defa
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => onEvent?.('BACK', { userData })} style={styles.backButton}>
+        <TouchableOpacity onPress={() => bridge.sendEvent('BACK', { token, userId, name, phone })} style={styles.backButton}>
           <Text style={[styles.backText, { color: theme.primary }]}>Cancelar</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>Transferir</Text>
       </View>
 
-      <BalanceCard balance={userData?.balance || 0} theme={theme} />
+      <BalanceCard balance={balance} theme={theme} />
 
       <View style={styles.form}>
         <Input
           label="Telefono destino"
-          value={phone}
-          onChangeText={setPhone}
+          value={destPhone}
+          onChangeText={setDestPhone}
           keyboardType="numeric"
           error={errors.phone}
           theme={theme}

@@ -1,14 +1,17 @@
 package com.daviplata.bridge
 
 import android.os.Bundle
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
+
 import com.daviplata.network.ApiClient
 import com.daviplata.session.SessionManager
 import com.daviplata.security.RootDetector
+import com.daviplata.security.CryptoManager
 
 class DaviplataModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -52,12 +55,12 @@ class DaviplataModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
     }
 
     @ReactMethod
-    fun loadBundle(name: String, props: Bundle?) {
+    fun sendEvent(eventName: String, data: ReadableMap?) {
         val activity = currentActivity ?: return
+        val bundle = if (data != null) Arguments.toBundle(data) else null
         activity.runOnUiThread {
-            val handler = (activity.applicationContext as? com.daviplata.DaviplataApplication)
             val navManager = com.daviplata.navigation.NavigationManager(activity)
-            navManager.loadBundle(name, props)
+            navManager.handleEvent(eventName, bundle)
         }
     }
 
@@ -104,5 +107,25 @@ class DaviplataModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
                 promise.reject("API_ERROR", e.message)
             }
         }.start()
+    }
+
+    @ReactMethod
+    fun encryptData(plaintext: String, promise: Promise) {
+        try {
+            val encrypted = CryptoManager.encrypt(plaintext)
+            promise.resolve(encrypted)
+        } catch (e: Exception) {
+            promise.reject("ENCRYPT_ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
+    fun decryptData(ciphertext: String, promise: Promise) {
+        try {
+            val decrypted = CryptoManager.decrypt(ciphertext)
+            promise.resolve(decrypted)
+        } catch (e: Exception) {
+            promise.reject("DECRYPT_ERROR", e.message)
+        }
     }
 }
