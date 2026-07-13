@@ -66,5 +66,15 @@ dependencies {
 
 react {
     root = reactNativeRoot
+    entryFile = reactNativeRoot.resolve("entry-points").resolve("login.js")
     debuggableVariants = listOf("debug")
+}
+
+// Skip RN auto-bundle in release (usamos bundles pre-compilados)
+gradle.taskGraph.whenReady {
+    allTasks.forEach { task ->
+        if (task.name.contains("BundleReleaseJsAndAssets") || task.name.contains("CreateBundleReleaseJsAndAssets")) {
+            task.enabled = false
+        }
+    }
 }
