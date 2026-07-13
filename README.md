@@ -1,117 +1,115 @@
 # Daviplata - Billetera Digital
 
-Aplicacion financiera movil construida con React Native (bundles multiples), Node.js (backend hexagonal), PostgreSQL (Supabase) y contenedor Android Kotlin.
+Aplicación de billetera digital con autenticación, transferencias y consulta de movimientos.
+
+## Stack
+
+| Componente | Tecnología |
+|------------|-----------|
+| **Frontend Android** | Kotlin + React Native 0.74 (Hermes HBC) |
+| **Backend** | Node.js + Express + TypeScript (hexagonal) |
+| **Base de datos** | Neon PostgreSQL |
+| **Despliegue** | Vercel (backend), APK (Android) |
+| **Seguridad** | AES-256-GCM (Android Keystore), EncryptedSharedPreferences, JWT + bcrypt |
 
 ## Arquitectura
 
-### React Native - Bundles Multiples
-Un solo proyecto React Native genera 4 bundles JS independientes:
-- **LoginBundle** - Pantalla de inicio de sesion
-- **HomeBundle** - Panel principal con saldo y acciones
-- **TransferBundle** - Formulario de transferencias
-- **MovementsBundle** - Historial de transacciones
-
-Cada bundle se carga via `ReactRootView` en el contenedor Android.
-
-### Backend - Arquitectura Hexagonal
 ```
-src/
-  core/
-    domain/     - Entidades, value objects, excepciones
-    ports/      - Interfaces (inbound/outbound)
-    services/   - Logica de negocio
-  adapters/
-    inbound/    - Controladores HTTP, middleware
-    outbound/  - Repositorios PostgreSQL
-    config/     - DI, createApp
+┌──────────────────────────────────────────────────────────────────────┐
+│                         Daviplata App                                │
+├──────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────┐  ┌────────────────────────────────────┐   │
+│  │   Android (Kotlin)  │  │   React Native (4 Hermes Bundles)  │   │
+│  │                     │  │                                    │   │
+│  │  ┌───────────────┐  │  │  ┌────────┐ ┌────────┐           │   │
+│  │  │ NavigationMgr │◄─┼──┼──┤ bridge │ │ Login  │           │   │
+│  │  └───────────────┘  │  │  │ .send  │ │ Home   │           │   │
+│  │  ┌───────────────┐  │  │  │ .get    │ │Transfer│           │   │
+│  │  │ DaviplataMod  │◄─┼──┼──┤ .check  │ │Movements          │   │
+│  │  │  (Native Mod) │  │  │  └────────┘ │        │           │   │
+│  │  └───────────────┘  │  │             └────────┘           │   │
+│  │  ┌───────────────┐  │  └────────────────────────────────────┘   │
+│  │  │ SessionManager│  │                                            │
+│  │  │ CryptoManager │  │  ┌──────────────────────────┐              │
+│  │  │ RootDetector  │  │  │      Backend (Vercel)     │              │
+│  │  │ ApiClient     │──┼──┼──► POST /auth/login       │              │
+│  │  └───────────────┘  │  │  │ GET  /accounts/balance │              │
+│  └─────────────────────┘  │  │ POST /transactions/trx  │              │
+│                           │  │ GET  /transactions/mov  │              │
+│                           │  │ GET  /health            │              │
+│                           │  └──────────────────────────┘              │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Base de Datos
-- PostgreSQL via Supabase
-- Tablas: users, accounts, transactions, sessions
-- Indices optimizados para consultas frecuentes
+## Bundles
 
-### Android Kotlin
-- Contenedor que carga bundles React Native
-- Sesion encriptada con EncryptedSharedPreferences
-- Deteccion de root y seguridad
-- Navegacion entre bundles via eventos
+4 entry points compilados a Hermes bytecode (~728KB c/u):
 
-## Configuracion
+| Bundle | Componente Android | Props |
+|--------|-------------------|-------|
+| `login` | `LoginBundle` | `token`, `sessionId` |
+| `home` | `HomeBundle` | `userId`, `name`, `phone`, `token` |
+| `transfer` | `TransferBundle` | `userId`, `name`, `phone`, `token`, `balance` |
+| `movements` | `MovementsBundle` | `userId`, `name`, `phone`, `token` |
 
-### Requisitos
-- Node.js 18+
-- Java 17 (JDK)
-- Android Studio
-- Supabase account
-- Vercel account
+## Build
 
-### 1. Base de datos
-1. Crear proyecto en Supabase
-2. Ejecutar `database/001_schema.sql`
-3. Ejecutar `database/002_seed.sql`
-
-### 2. Backend
 ```bash
-cd backend
-cp ../.env.example ../.env
-# Editar .env con tus credenciales
-npm install
-npm run dev
-```
-
-### 3. React Native
-```bash
+# Bundles
 cd reactnative
 npm install
-npm run build:bundles
+node build-bundles.js    # → assets/bundles/{login,home,transfer,movements}/*.bundle
+
+# APK Debug
+cd ../android
+./gradlew assembleDebug   # → app/build/outputs/apk/debug/app-debug.apk
+
+# APK Release
+./gradlew assembleRelease # → app/build/outputs/apk/release/app-release.apk
 ```
 
-### 4. Android
-Abrir `android/` en Android Studio, sincronizar Gradle y ejecutar.
+## Comunicación Android ↔ RN
 
-### 5. Desplegar Backend
+- **RN → Android**: `NativeModules.DaviplataModule.sendEvent(eventName, data)` vía `src/services/bridge.ts`
+- **Android → RN**: `ReactRootView.startReactApplication()` con props planas en `Bundle`
+
+## Seguridad
+
+- JWT con bcrypt (cost 12), sesiones en DB, expiración 24h
+- Cifrado AES-256-GCM vía Android Keystore (CryptoManager)
+- Sesiones en EncryptedSharedPreferences (AES-256-GCM)
+- Detección de root (9 mecanismos)
+- `allowBackup="false"`, SSL verificación estricta en DB
+- CORS restringido a `*.vercel.app`, HSTS con preload
+- ProGuard con reglas específicas
+
+## Backend (hexagonal)
+
+```
+src/
+├── core/entities/       # User, Session, Account, Transaction
+├── core/ports/          # AuthService, AccountService, TxService
+├── adapters/in/         # Controladores Express (auth, accounts, transactions)
+├── adapters/out/        # PostgreSQL, JWT, bcrypt
+├── config/              # DI container, app setup
+└── server.ts            # Entry point
+```
+
+API: `https://daviplata-app.vercel.app`
+
+## Pruebas
+
+Credenciales de prueba:
+- `test@daviplata.com` / `Test1234!` — saldo $490,000 COP
+- `maria@correo.com` / `Test1234!` — saldo $10,000 COP
+
 ```bash
-vercel deploy
+# Health check
+curl https://daviplata-app.vercel.app/api/health
+# → {"status":"ok"}
+
+# Login
+curl -X POST https://daviplata-app.vercel.app/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@daviplata.com","password":"Test1234!"}'
 ```
-
-## Endpoints API
-
-| Metodo | Ruta | Auth | Descripcion |
-|--------|------|------|-------------|
-| POST | /api/auth/login | No | Iniciar sesion |
-| POST | /api/auth/register | No | Registrar usuario |
-| POST | /api/auth/logout | Si | Cerrar sesion |
-| GET | /api/accounts/balance | Si | Obtener saldo |
-| GET | /api/accounts/me | Si | Datos de cuenta |
-| POST | /api/transactions/transfer | Si | Realizar transferencia |
-| GET | /api/transactions/movements | Si | Historial de movimientos |
-
-## Datos de Prueba
-
-| Usuario | Correo | Contrasena | Saldo |
-|---------|--------|------------|-------|
-| Juan Perez | juan@correo.com | 123456 | $500,000 COP |
-| Maria Garcia | maria@correo.com | 123456 | $300,000 COP |
-
-## Estructura del Proyecto
-
-```
-daviplata/
-├── reactnative/          # Proyecto React Native (4 bundles)
-├── backend/              # Node.js + Express (hexagonal)
-├── database/             # SQL schema y seeds
-├── android/              # Contenedor Kotlin
-├── vercel.json           # Configuracion de despliegue
-├── .env.example          # Variables de entorno
-└── README.md
-```
-
-## Tecnologias
-
-- **Frontend:** React Native 0.74, TypeScript
-- **Backend:** Node.js, Express, TypeScript
-- **Base de datos:** PostgreSQL (Supabase)
-- **Android:** Kotlin, AndroidX Security Crypto
-- **Despliegue:** Vercel (backend), Supabase (DB)
-- **Seguridad:** JWT, bcrypt, AES-256-GCM, root detection
