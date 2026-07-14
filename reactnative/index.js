@@ -1,1 +1,3 @@
-import('./entry-points/login');
+import { AppRegistry } from 'react-native';
+import App from './src/App';
+AppRegistry.registerComponent('DaviplataApp', () => App);

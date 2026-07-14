@@ -1,52 +1,75 @@
 import { NativeModules } from 'react-native';
 
-const { DaviplataModule } = NativeModules;
+interface DevBridge {
+  navigate: (screen: string, props?: Record<string, any>) => void;
+  handleEvent: (event: string, data?: Record<string, any>) => void;
+  api: {
+    getBalance: (token: string) => Promise<any>;
+    transfer: (token: string, data: any) => Promise<any>;
+    getMovements: (token: string, page: number) => Promise<any>;
+  };
+}
 
-export const bridge = {
-  async getSession(): Promise<{
-    sessionId: string;
-    userId: string;
-    name: string;
-    phone: string;
-    expiresAt: number;
-  } | null> {
-    try {
-      return await DaviplataModule.getSession();
-    } catch {
-      return null;
-    }
+declare const __DEV__: boolean | undefined;
+
+const isMetro = typeof __DEV__ !== 'undefined' && __DEV__;
+
+const NativeBridge = NativeModules.DaviplataModule;
+
+function getDevBridge(): DevBridge | undefined {
+  try {
+    return (globalThis as any).__devBridge;
+  } catch {
+    return undefined;
+  }
+}
+
+const DevBridge = {
+  async getSession(): Promise<any> {
+    return getDevBridge()?.navigate
+      ? { sessionId: 'dev', userId: '', name: '', phone: '', expiresAt: Date.now() + 86400000 }
+      : null;
   },
-
   async checkSecurity(): Promise<{ isRooted: boolean }> {
-    try {
-      return await DaviplataModule.checkSecurity();
-    } catch {
-      return { isRooted: false };
-    }
+    return { isRooted: false };
   },
-
   sendEvent(eventName: string, data?: Record<string, any>) {
-    DaviplataModule.sendEvent(eventName, data || {});
+    getDevBridge()?.handleEvent(eventName, data);
   },
-
   async getBalance(token: string): Promise<{ balance: number; accountNumber: string }> {
-    return DaviplataModule.getBalance(token);
+    const api = getDevBridge()?.api;
+    if (api) return api.getBalance(token);
+    return { balance: 0, accountNumber: '' };
   },
-
-  async performTransfer(data: {
-    token: string;
-    destinationPhone: string;
-    amount: number;
-    description?: string;
-  }): Promise<any> {
-    return DaviplataModule.performTransfer(data);
+  async performTransfer(data: any): Promise<any> {
+    const api = getDevBridge()?.api;
+    if (api) return api.transfer(data.token, data);
+    return {};
   },
+  async getMovements(token: string, page: number = 1): Promise<any> {
+    const api = getDevBridge()?.api;
+    if (api) return api.getMovements(token, page);
+    return { transactions: [], total: 0, page: 1 };
+  },
+};
 
-  async getMovements(token: string, page: number = 1): Promise<{
-    transactions: any[];
-    total: number;
-    page: number;
-  }> {
-    return DaviplataModule.getMovements(token, page);
+export const bridge = isMetro ? DevBridge : {
+  async getSession(): Promise<any> {
+    try { return await NativeBridge.getSession(); } catch { return null; }
+  },
+  async checkSecurity(): Promise<{ isRooted: boolean }> {
+    try { return await NativeBridge.checkSecurity(); } catch { return { isRooted: false }; }
+  },
+  sendEvent(eventName: string, data?: Record<string, any>) {
+    NativeBridge.sendEvent(eventName, data || {});
+  },
+  async getBalance(token: string): Promise<{ balance: number; accountNumber: string }> {
+    return NativeBridge.getBalance(token);
+  },
+  async performTransfer(data: any): Promise<any> {
+    return NativeBridge.performTransfer(data);
+  },
+  async getMovements(token: string, page: number = 1): Promise<any> {
+    return NativeBridge.getMovements(token, page);
   },
 };

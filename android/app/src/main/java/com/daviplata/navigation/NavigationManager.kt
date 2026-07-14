@@ -3,6 +3,7 @@ package com.daviplata.navigation
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
+import android.view.View
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.daviplata.BuildConfig
@@ -18,8 +19,49 @@ class NavigationManager(private val context: Context) {
 
     private val reactInstanceManagers = mutableMapOf<String, ReactInstanceManager>()
     private val rootViews = mutableMapOf<String, ReactRootView>()
+    private var devRootView: ReactRootView? = null
+    private var devInstanceManager: ReactInstanceManager? = null
 
     fun loadBundle(name: String, initialProps: Bundle?) {
+        if (BuildConfig.DEBUG) {
+            loadDevBundle(initialProps)
+        } else {
+            loadReleaseBundle(name, initialProps)
+        }
+    }
+
+    private fun loadDevBundle(initialProps: Bundle?) {
+        val activity = context as? AppCompatActivity ?: return
+        if (devRootView == null) {
+            devRootView = ReactRootView(context)
+            val instanceManager = getDevInstanceManager()
+            devRootView!!.startReactApplication(instanceManager, "DaviplataApp", initialProps ?: Bundle())
+            val container = FrameLayout(context).apply {
+                id = View.generateViewId()
+            }
+            container.addView(devRootView!!, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            activity.setContentView(container)
+        }
+    }
+
+    private fun getDevInstanceManager(): ReactInstanceManager {
+        if (devInstanceManager == null) {
+            devInstanceManager = ReactInstanceManager.builder()
+                .setApplication(context.applicationContext as Application)
+                .setJSMainModulePath("index")
+                .addPackage(DaviplataPackage())
+                .addPackage(MainReactPackage())
+                .setUseDeveloperSupport(true)
+                .setInitialLifecycleState(LifecycleState.RESUMED)
+                .build()
+        }
+        return devInstanceManager!!
+    }
+
+    private fun loadReleaseBundle(name: String, initialProps: Bundle?) {
         val activity = context as? AppCompatActivity ?: return
 
         val rootView = ReactRootView(context)
@@ -34,7 +76,7 @@ class NavigationManager(private val context: Context) {
         rootView.startReactApplication(reactInstanceManager, appComponent, props)
 
         val container = FrameLayout(context).apply {
-            id = android.view.View.generateViewId()
+            id = View.generateViewId()
         }
         container.addView(rootView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
@@ -143,5 +185,7 @@ class NavigationManager(private val context: Context) {
         reactInstanceManagers.values.forEach { it.onHostDestroy() }
         reactInstanceManagers.clear()
         rootViews.clear()
+        devInstanceManager?.onHostDestroy()
+        devRootView = null
     }
 }
