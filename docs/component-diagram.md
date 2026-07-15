@@ -15,7 +15,7 @@ graph TB
         end
 
         subgraph "Native Modules"
-            DM[DaviplataModule.kt<br/>@ReactMethod methods]
+            DM["DaviplataModule.kt<br/>@ReactMethod methods"]
         end
 
         subgraph "Navigation"

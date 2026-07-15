@@ -112,7 +112,7 @@ graph LR
     end
 
     subgraph Native
-        DM[DaviplataModule.kt] -->|"sendEvent(eventName, bundle)"| NM
+        DM["DaviplataModule.kt"] -->|"sendEvent(eventName, bundle)"| NM
     end
 
     subgraph Android
