@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { createContainer } from './DependencyInjection';
+import { queryOne } from '../outbound/persistence/DatabaseConnection';
 
 export function createApp() {
   const app = express();
@@ -52,7 +53,6 @@ export function createApp() {
       if (!email || balance === undefined) {
         return res.status(400).json({ message: 'email and balance required' });
       }
-      const { queryOne } = await import('../../outbound/persistence/DatabaseConnection');
       const user = await queryOne<{ id: string }>('SELECT id FROM users WHERE email = $1', [email]);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -66,7 +66,6 @@ export function createApp() {
 
   app.post('/api/dev/set-balance-all', async (_req, res) => {
     try {
-      const { queryOne } = await import('../../outbound/persistence/DatabaseConnection');
       await queryOne('UPDATE accounts SET balance = 5000000, updated_at = NOW()');
       res.status(200).json({ message: 'All balances set to 5,000,000' });
     } catch (error: any) {
