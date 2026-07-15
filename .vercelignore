@@ -1,0 +1,5 @@
+android/
+reactnative/
+node_modules/
+docs/
+*.md
