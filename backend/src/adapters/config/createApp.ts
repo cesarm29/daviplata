@@ -73,5 +73,15 @@ export function createApp() {
     }
   });
 
+  app.post('/api/dev/clear-transactions', async (_req, res) => {
+    try {
+      await queryOne('DELETE FROM transactions');
+      await queryOne('UPDATE accounts SET balance = 5000000, updated_at = NOW()');
+      res.status(200).json({ message: 'All transactions cleared, balances reset to 5,000,000' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   return app;
 }
