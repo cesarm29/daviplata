@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { BundleProps } from '../types';
 import { defaultTheme } from '../theme/colors';
 import { bridge } from '../services/bridge';
@@ -8,22 +8,36 @@ import BalanceCard from '../components/BalanceCard';
 const HomeScreen: React.FC<BundleProps> = ({ userId, name, phone, token, accountNumber: initialAccountNumber, balance: initialBalance, theme = defaultTheme }) => {
   const [balance, setBalance] = useState(initialBalance || 0);
   const [accountNo, setAccountNo] = useState(initialAccountNumber || '');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchBalance = useCallback(async () => {
+    if (!token) return;
+    try {
+      const result = await bridge.getBalance(token);
+      setBalance(result.balance);
+      setAccountNo(result.accountNumber);
+    } catch {}
+  }, [token]);
 
   useEffect(() => {
-    if (token) {
-      bridge.getBalance(token).then((result) => {
-        setBalance(result.balance);
-        setAccountNo(result.accountNumber);
-      }).catch(() => {});
-    }
-  }, [token]);
+    fetchBalance();
+  }, [fetchBalance]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchBalance();
+    setRefreshing(false);
+  }, [fetchBalance]);
 
   const formatCurrency = (amount: number): string => {
     return `$${amount.toLocaleString('es-CO')}`;
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}>
       <View style={styles.header}>
         <Text style={[styles.greeting, { color: theme.text }]}>Hola, {name || 'Usuario'}</Text>
         <Text style={[styles.balanceLabel, { color: theme.textSecondary }]}>Saldo disponible</Text>
@@ -43,7 +57,7 @@ const HomeScreen: React.FC<BundleProps> = ({ userId, name, phone, token, account
 
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: theme.secondary }]}
-          onPress={() => bridge.sendEvent('OPEN_MOVEMENTS', { token, userId, name, phone })}
+          onPress={() => bridge.sendEvent('OPEN_MOVEMENTS', { token, userId, name, phone, balance })}
           activeOpacity={0.8}
         >
           <Text style={styles.actionIcon}>#</Text>

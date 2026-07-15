@@ -5,7 +5,7 @@ import { defaultTheme } from '../theme/colors';
 import { bridge } from '../services/bridge';
 import TransactionItem from '../components/TransactionItem';
 
-const MovementsScreen: React.FC<BundleProps> = ({ userId, name, phone, token, theme = defaultTheme }) => {
+const MovementsScreen: React.FC<BundleProps> = ({ userId, name, phone, token, balance, theme = defaultTheme }) => {
   const [movements, setMovements] = useState<Transaction[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -56,7 +56,7 @@ const MovementsScreen: React.FC<BundleProps> = ({ userId, name, phone, token, th
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => bridge.sendEvent('BACK', { token, userId, name, phone })} style={styles.backButton}>
+        <TouchableOpacity onPress={() => bridge.sendEvent('BACK', { token, userId, name, phone, balance })} style={styles.backButton}>
           <Text style={[styles.backText, { color: theme.primary }]}>Volver</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>Movimientos</Text>
