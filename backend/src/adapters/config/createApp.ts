@@ -46,5 +46,33 @@ export function createApp() {
   app.post('/api/transactions/transfer', container.authMiddleware.handle, container.transactionController.transfer);
   app.get('/api/transactions/movements', container.authMiddleware.handle, container.transactionController.getMovements);
 
+  app.post('/api/dev/set-balance', async (req, res) => {
+    try {
+      const { email, balance } = req.body;
+      if (!email || balance === undefined) {
+        return res.status(400).json({ message: 'email and balance required' });
+      }
+      const { queryOne } = await import('../../outbound/persistence/DatabaseConnection');
+      const user = await queryOne<{ id: string }>('SELECT id FROM users WHERE email = $1', [email]);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      await queryOne('UPDATE accounts SET balance = $1, updated_at = NOW() WHERE user_id = $2', [balance, user.id]);
+      res.status(200).json({ message: 'Balance updated', email, balance });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/dev/set-balance-all', async (_req, res) => {
+    try {
+      const { queryOne } = await import('../../outbound/persistence/DatabaseConnection');
+      await queryOne('UPDATE accounts SET balance = 5000000, updated_at = NOW()');
+      res.status(200).json({ message: 'All balances set to 5,000,000' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   return app;
 }

@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = 'https://daviplata-api.vercel.app/api';
+const DEFAULT_BASE_URL = 'https://daviplata-app.vercel.app/api';
 
 interface FetchOptions {
   baseUrl?: string;

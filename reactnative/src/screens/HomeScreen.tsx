@@ -33,7 +33,7 @@ const HomeScreen: React.FC<BundleProps> = ({ userId, name, phone, token, account
       <View style={styles.actionsRow}>
         <TouchableOpacity
           style={[styles.actionCard, { backgroundColor: theme.primary }]}
-          onPress={() => bridge.sendEvent('OPEN_TRANSFER', { token, userId, name, phone })}
+          onPress={() => bridge.sendEvent('OPEN_TRANSFER', { token, userId, name, phone, balance })}
           activeOpacity={0.8}
         >
           <Text style={styles.actionIcon}>$</Text>

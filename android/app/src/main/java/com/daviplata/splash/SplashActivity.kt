@@ -29,6 +29,16 @@ class SplashActivity : AppCompatActivity() {
         }, 2000)
     }
 
+    override fun onResume() {
+        super.onResume()
+        navManager?.onHostResume(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        navManager?.onHostPause()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         navManager?.destroy()

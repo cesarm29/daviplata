@@ -186,6 +186,16 @@ class NavigationManager(private val context: Context) {
         }
     }
 
+    fun onHostResume(activity: AppCompatActivity) {
+        devInstanceManager?.onHostResume(activity, null)
+        reactInstanceManagers.values.forEach { it.onHostResume(activity, null) }
+    }
+
+    fun onHostPause() {
+        devInstanceManager?.onHostPause()
+        reactInstanceManagers.values.forEach { it.onHostPause() }
+    }
+
     fun destroy() {
         reactInstanceManagers.values.forEach { it.onHostDestroy() }
         reactInstanceManagers.clear()
