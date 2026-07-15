@@ -7,3 +7,5 @@ android/build/
 android/app/build/
 android/app/src/main/assets/bundles/*/index.android.bundle
 reactnative/node_modules/
+
+.vercel

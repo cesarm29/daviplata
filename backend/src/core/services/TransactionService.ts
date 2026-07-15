@@ -63,8 +63,8 @@ export class TransactionService implements ITransactionService {
       status: 'COMPLETED',
     });
 
-    await this.accountRepository.updateBalance(sourceAccount.id, sourceAccount.balance - data.amount);
-    await this.accountRepository.updateBalance(destinationAccount.id, destinationAccount.balance + data.amount);
+    await this.accountRepository.adjustBalance(sourceAccount.id, -data.amount);
+    await this.accountRepository.adjustBalance(destinationAccount.id, data.amount);
 
     return debitTransaction;
   }

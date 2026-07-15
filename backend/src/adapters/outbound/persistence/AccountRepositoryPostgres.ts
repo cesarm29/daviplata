@@ -14,6 +14,10 @@ export class AccountRepositoryPostgres implements IAccountRepository {
     await query('UPDATE accounts SET balance = $1, updated_at = NOW() WHERE id = $2', [newBalance, accountId]);
   }
 
+  async adjustBalance(accountId: string, delta: number): Promise<void> {
+    await query('UPDATE accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [delta, accountId]);
+  }
+
   async create(account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>): Promise<Account> {
     return queryOne<Account>(
       'INSERT INTO accounts (user_id, account_number, balance, currency) VALUES ($1, $2, $3, $4) RETURNING id, user_id as "userId", account_number as "accountNumber", balance, currency, created_at as "createdAt", updated_at as "updatedAt"',
