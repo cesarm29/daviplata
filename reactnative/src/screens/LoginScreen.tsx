@@ -44,7 +44,7 @@ const LoginScreen: React.FC<BundleProps> = ({ theme = defaultTheme }) => {
         sessionId: result.sessionId,
         token: result.token,
         userId: result.user.id,
-        name: result.user.name,
+        name: result.user.fullName || result.user.name,
         phone: result.user.phone,
       });
     } catch (error: any) {
