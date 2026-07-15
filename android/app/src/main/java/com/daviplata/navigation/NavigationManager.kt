@@ -49,14 +49,19 @@ class NavigationManager(private val context: Context) {
 
     private fun getDevInstanceManager(): ReactInstanceManager {
         if (devInstanceManager == null) {
-            devInstanceManager = ReactInstanceManager.builder()
+            val activity = context as? AppCompatActivity
+            val builder = ReactInstanceManager.builder()
                 .setApplication(context.applicationContext as Application)
+                .setBundleAssetName("index.android.bundle")
                 .setJSMainModulePath("index")
                 .addPackage(DaviplataPackage())
                 .addPackage(MainReactPackage())
                 .setUseDeveloperSupport(true)
-                .setInitialLifecycleState(LifecycleState.RESUMED)
-                .build()
+                .setInitialLifecycleState(LifecycleState.BEFORE_CREATE)
+            if (activity != null) {
+                builder.setCurrentActivity(activity)
+            }
+            devInstanceManager = builder.build()
         }
         return devInstanceManager!!
     }
