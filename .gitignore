@@ -5,7 +5,7 @@ dist/
 android/.gradle/
 android/build/
 android/app/build/
-android/app/src/main/assets/bundles/*/index.android.bundle
+# android/app/src/main/assets/bundles/*/index.android.bundle
 reactnative/node_modules/
 
 .vercel
